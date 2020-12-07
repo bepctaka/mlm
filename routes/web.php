@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\LoginSessionController;
 
 /*
 |--------------------------------------------------------------------------
@@ -20,3 +21,18 @@ Route::get('/', function () {
 Route::middleware(['auth:sanctum', 'verified'])->get('/dashboard', function () {
     return view('dashboard');
 })->name('dashboard');
+
+Route::group(['middleware' => config('fortify.middleware', ['web'])], function () {
+	$enableViews = config('fortify.views', true);
+	if ($enableViews) {
+		Route::get('/login', [LoginSessionController::class, 'create'])
+			->middleware(['guest'])
+			->name('login');
+	}
+	$limiter = config('fortify.limiters.login');
+	Route::post('/login', [LoginSessionController::class, 'store'])
+		->middleware(array_filter([
+			'guest',
+			$limiter ? 'throttle:'.$limiter : null,
+		]));
+});
